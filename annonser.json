@@ -1,0 +1,8 @@
+[ {
+  "id" : 1,
+  "rubrik" : "Cykel till salu",
+  "saljare" : "Rimouna",
+  "beskrivning" : "Fin cykel i bra skick, passar bra för vardagsbruk.",
+  "pris" : 500.0,
+  "pinkod" : "1234"
+} ]

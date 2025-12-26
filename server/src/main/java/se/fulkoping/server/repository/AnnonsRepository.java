@@ -1,54 +1,69 @@
 package se.fulkoping.server.repository;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import se.fulkoping.server.model.Annons;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
-// Repository som lagrar annonser i minnet
 public class AnnonsRepository {
 
-    private final List<Annons> annonser = new ArrayList<>();
+    private final File file = new File("server/src/main/resources/annonser.json");
+    private final ObjectMapper mapper = new ObjectMapper();
+    private List<Annons> annonser = new ArrayList<>();
     private long nextId = 1;
 
-    // Hämta alla annonser
+    public AnnonsRepository() {
+        load();
+    }
+
     public List<Annons> findAll() {
         return annonser;
     }
 
-    // Hämta annons baserat på id
-    public Optional<Annons> findById(long id) {
-        return annonser.stream()
-                .filter(a -> a.getId() == id)
-                .findFirst();
-    }
-
-    // Spara ny annons (id sätts automatiskt)
     public void save(Annons annons) {
         annons.setId(nextId++);
         annonser.add(annons);
+        saveToFile();
     }
 
-    // Uppdatera pris om pinkod stämmer
-    public boolean updatePrice(long id, String pinkod, double nyttPris) {
-        Optional<Annons> annons = findById(id);
-
-        if (annons.isPresent() && annons.get().getPinkod().equals(pinkod)) {
-            annons.get().setPris(nyttPris);
-            return true;
+    public void updatePrice(long id, String pinkod, double pris) {
+        for (Annons a : annonser) {
+            if (a.getId() == id && a.getPinkod().equals(pinkod)) {
+                a.setPris(pris);
+                saveToFile();
+                return;
+            }
         }
-        return false;
     }
 
-    // Radera annons om pinkod stämmer
-    public boolean delete(long id, String pinkod) {
-        Optional<Annons> annons = findById(id);
+    public void delete(long id, String pinkod) {
+        annonser.removeIf(a ->
+                a.getId() == id && a.getPinkod().equals(pinkod)
+        );
+        saveToFile();
+    }
 
-        if (annons.isPresent() && annons.get().getPinkod().equals(pinkod)) {
-            annonser.remove(annons.get());
-            return true;
+    private void saveToFile() {
+        try {
+            mapper.writerWithDefaultPrettyPrinter().writeValue(file, annonser);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        return false;
+    }
+
+    private void load() {
+        try {
+            if (file.exists()) {
+                annonser = mapper.readValue(file, new TypeReference<>() {});
+                if (!annonser.isEmpty()) {
+                    nextId = annonser.get(annonser.size() - 1).getId() + 1;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
